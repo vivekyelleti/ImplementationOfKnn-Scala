@@ -1,0 +1,80 @@
+import org.apache.spark._
+import org.apache.spark.SparkContext._
+import org.apache.log4j.{Level, Logger}
+import scala.collection.immutable.ListMap
+
+object knn {
+    def main(args: Array[String]) {
+      //val inputFile = args(0)
+    val conf = new SparkConf().setAppName("knn")
+	//conf.set("spark.executor.memory", "4g")
+    	val sc = new SparkContext(conf)
+    	val rootLogger = Logger.getRootLogger()
+    	rootLogger.setLevel(Level.ERROR)
+
+println("Execution STarted")
+
+	var text=sc.textFile("data.txt")
+ text.collect()
+
+ var v1=text.map(x => parse(x))
+v1.collect().foreach(println)
+
+
+var test=Data(6,8,"class1")
+
+ var v2=v1.map( x => modify(x,test))
+ v2.collect().foreach(println)
+
+
+ var v3=v2.map(x => predict(x))
+ v3.collect().foreach(println)
+
+println("Sorted Distance")
+ val v4=v3.sortBy(_.distance)
+ v4.collect().foreach(println)
+
+var result=v4.take(5).groupBy(_.id).mapValues(_.size)//.eqauls("class1")) class1+=1 else class2+=1)
+result.foreach(println)
+
+var sortedList=ListMap(result.toSeq.sortBy(_._1):_*)
+println("So the final Result is ",sortedList.head)
+
+
+
+  //var final_result=sortedList.head
+ //for ((k,v) <- final_result) println("So the Predicted Class is: ", k)
+//println(result.max)
+
+
+println("Execution Ended")
+  
+    }
+
+case class Data(x: Double,y: Double,id:String)
+
+def parse(row:String) : Data={
+     val fields=row.split(",")
+     val x:Double = fields(0).toDouble
+     val y:Double = fields(1).toDouble
+     val id:String = fields(2)
+     Data(x,y,id)
+      }
+      
+case class Intermediate( x:Double, y:Double , id:String,x_test:Double,y_test:Double)
+
+def modify(x:Data,y:Data): Intermediate={
+      Intermediate(x.x,x.y,x.id,y.x,y.y)}
+
+case class Eucledian(var distance:Double,var id:String)
+
+def predict(value:Intermediate): Eucledian={
+      var x_d=value.x-value.x_test
+      var y_d=value.y-value.y_test
+      x_d*=x_d
+      y_d*=y_d
+      val distance=x_d+y_d
+     Eucledian(distance,value.id)
+      }
+
+}
